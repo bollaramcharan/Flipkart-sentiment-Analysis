@@ -8,26 +8,34 @@ from nltk.stem import WordNetLemmatizer
 # ===============================
 # Page Config
 # ===============================
-st.set_page_config(page_title="Flipkart Sentiment Analyzer")
+st.set_page_config(
+    page_title="Flipkart Sentiment Analyzer",
+    page_icon="🛒",
+    layout="centered"
+)
 
 # ===============================
-# Download NLTK (only once)
+# Download NLTK Resources (Safe for Cloud)
 # ===============================
 @st.cache_resource
 def load_nltk():
-    nltk.download("stopwords")
-    nltk.download("wordnet")
+    nltk.download("stopwords", quiet=True)
+    nltk.download("wordnet", quiet=True)
 
 load_nltk()
 
 # ===============================
-# Load Model + Vectorizer (CACHED)
+# Load Model + Vectorizer
 # ===============================
 @st.cache_resource
 def load_model():
-    model = joblib.load("sentiment_model.pkl")
-    vectorizer = joblib.load("tfidf_vectorizer.pkl")
-    return model, vectorizer
+    try:
+        model = joblib.load("sentiment_model.pkl")
+        vectorizer = joblib.load("tfidf_vectorizer.pkl")
+        return model, vectorizer
+    except Exception as e:
+        st.error(f"Error loading model files: {e}")
+        return None, None
 
 model, vectorizer = load_model()
 
@@ -51,15 +59,19 @@ def clean_text(text):
 # Streamlit UI
 # ===============================
 st.title("🛒 Flipkart Product Review Sentiment Analysis")
-st.write("Enter a review to detect whether it is Positive or Negative.")
+st.write("Enter a product review to detect whether it is **Positive** or **Negative**.")
 
-review = st.text_area("Enter Review Text")
+review = st.text_area("✍️ Enter Review Text")
 
+# ===============================
+# Prediction
+# ===============================
 if st.button("Predict Sentiment"):
 
-    if review.strip() == "":
+    if model is None or vectorizer is None:
+        st.error("Model not loaded. Check .pkl files and requirements.txt")
+    elif review.strip() == "":
         st.warning("Please enter a review")
-
     else:
         with st.spinner("Analyzing sentiment..."):
             cleaned = clean_text(review)
